@@ -106,6 +106,11 @@ class EmbeddingMap {
         this.minimap = document.getElementById(minimapId);
         this.minimapCtx = this.minimap.getContext('2d');
 
+        // Coordinate scaling factor to expand the data space
+        // Transforms 200×135 data space into ~10000×6750 virtual pixel space
+        // This provides enough room (83px between points) to prevent image overlap
+        this.SCALE_FACTOR = 50;
+
         // Data
         this.allPoints = [];
         this.quadTree = null;
@@ -177,11 +182,24 @@ class EmbeddingMap {
     }
 
     loadData(data) {
-        this.allPoints = data.points;
-        this.bounds = data.bounds;
+        // Apply coordinate scaling to expand the data space
+        // Scale all point coordinates by SCALE_FACTOR
+        this.allPoints = data.points.map(point => ({
+            ...point,
+            x: point.x * this.SCALE_FACTOR,
+            y: point.y * this.SCALE_FACTOR
+        }));
 
-        // Build quadtree
-        const padding = 10;
+        // Scale bounds by SCALE_FACTOR
+        this.bounds = {
+            minX: data.bounds.minX * this.SCALE_FACTOR,
+            minY: data.bounds.minY * this.SCALE_FACTOR,
+            maxX: data.bounds.maxX * this.SCALE_FACTOR,
+            maxY: data.bounds.maxY * this.SCALE_FACTOR
+        };
+
+        // Build quadtree with scaled coordinates
+        const padding = 10 * this.SCALE_FACTOR;
         const qtBounds = {
             x: this.bounds.minX - padding,
             y: this.bounds.minY - padding,
@@ -439,14 +457,17 @@ class EmbeddingMap {
 
         const visiblePoints = this.getVisiblePoints();
 
-        // Calculate image size based on viewport width
-        // Formula: imageSize = 4 * (200 / viewportWidth)
-        // - When viewportWidth = 200 (full map): imageSize = 4px
-        // - When viewportWidth = 20 (zoomed in 10x): imageSize = 256px
+        // Calculate image size based on viewport width in scaled coordinate space
+        // Scaled data width = 200 * SCALE_FACTOR = 10000 units
+        // Formula: imageSize = 4 * (scaledDataWidth / viewportWidth)
+        // - When viewportWidth = 10000 (full map): imageSize = 4px
+        // - When viewportWidth = 1000 (zoomed in 10x): imageSize = 40px
+        // - When viewportWidth = 100 (zoomed in 100x): imageSize = 400px
         const viewport = this.getViewportBounds();
         const viewportWidth = viewport.width;
+        const scaledDataWidth = this.bounds.maxX - this.bounds.minX;
 
-        let displaySize = 4 * (200 / viewportWidth);
+        let displaySize = 4 * (scaledDataWidth / viewportWidth);
         displaySize = Math.max(4, Math.min(256, displaySize));
 
         // Determine render mode based on display size
