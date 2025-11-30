@@ -310,15 +310,23 @@ class EmbeddingMap {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
+        // Get world position under cursor BEFORE zoom
         const worldPosBefore = this.screenToWorld(mouseX, mouseY);
 
+        // Apply zoom
         const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-        this.targetCamera.zoom = Math.max(0.05, Math.min(20, this.targetCamera.zoom * zoomFactor));
+        const newZoom = Math.max(0.05, Math.min(20, this.targetCamera.zoom * zoomFactor));
 
-        const worldPosAfter = this.screenToWorld(mouseX, mouseY);
+        // Calculate world position under cursor AFTER zoom using the NEW zoom value
+        const canvasWidth = this.canvas.clientWidth;
+        const canvasHeight = this.canvas.clientHeight;
+        const worldPosAfterX = (mouseX - canvasWidth / 2) / newZoom + this.targetCamera.x;
+        const worldPosAfterY = (mouseY - canvasHeight / 2) / newZoom + this.targetCamera.y;
 
-        this.targetCamera.x += worldPosBefore.x - worldPosAfter.x;
-        this.targetCamera.y += worldPosBefore.y - worldPosAfter.y;
+        // Adjust camera so the world point stays under cursor
+        this.targetCamera.x += worldPosBefore.x - worldPosAfterX;
+        this.targetCamera.y += worldPosBefore.y - worldPosAfterY;
+        this.targetCamera.zoom = newZoom;
     }
 
     onTouchStart(e) {
