@@ -213,8 +213,9 @@ class EmbeddingMap {
 
         const zoomX = canvasWidth / dataWidth;
         const zoomY = canvasHeight / dataHeight;
-        // Start fully zoomed out (0.15 factor) to show all points as tiny dots
-        const zoom = Math.min(zoomX, zoomY) * 0.15;
+        // Start fully zoomed out to show all points as tiny dots (~4px each)
+        // Use 0.95 factor to fit entire map with minimal padding
+        const zoom = Math.min(zoomX, zoomY) * 0.95;
 
         this.camera = { x: centerX, y: centerY, zoom };
         this.targetCamera = { ...this.camera };
@@ -438,32 +439,26 @@ class EmbeddingMap {
 
         const visiblePoints = this.getVisiblePoints();
 
-        // Determine LOD and calculate display size using zoom-dependent formula
-        const zoom = this.camera.zoom;
-        let renderMode, displaySize;
+        // Calculate image size based on viewport width
+        // Formula: imageSize = 4 * (200 / viewportWidth)
+        // - When viewportWidth = 200 (full map): imageSize = 4px
+        // - When viewportWidth = 20 (zoomed in 10x): imageSize = 256px
+        const viewport = this.getViewportBounds();
+        const viewportWidth = viewport.width;
 
-        // Use formula: displaySize = min(256, baseSize * zoom^1.5)
-        // This creates smooth scaling that grows with zoom level
-        const scaledSize = 4 * Math.pow(zoom, 1.5);
-        displaySize = Math.min(256, scaledSize);
+        let displaySize = 4 * (200 / viewportWidth);
+        displaySize = Math.max(4, Math.min(256, displaySize));
 
         // Determine render mode based on display size
-        if (zoom < this.LOD_DOT_THRESHOLD) {
+        let renderMode;
+        if (displaySize <= 8) {
             renderMode = 'dot';
-            // For dots, use small fixed size (2-4px)
-            displaySize = Math.max(2, Math.min(8, scaledSize));
-        } else if (zoom < this.LOD_SMALL_THRESHOLD) {
+        } else if (displaySize <= 32) {
             renderMode = 'small';
-            // Small thumbnails: 16-32px range
-            displaySize = Math.min(32, Math.max(16, scaledSize));
-        } else if (zoom < this.LOD_MEDIUM_THRESHOLD) {
+        } else if (displaySize <= 128) {
             renderMode = 'medium';
-            // Medium thumbnails: 64-128px range
-            displaySize = Math.min(128, Math.max(64, scaledSize));
         } else {
             renderMode = 'large';
-            // Large thumbnails: up to 256px
-            displaySize = Math.min(256, Math.max(128, scaledSize));
         }
 
         // Render points
