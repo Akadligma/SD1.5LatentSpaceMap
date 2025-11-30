@@ -131,11 +131,12 @@ class EmbeddingMap {
         this.animationFrame = null;
         this.hoveredPoint = null;
 
-        // LOD thresholds
-        this.LOD_DOT_THRESHOLD = 0.1; // Below this zoom, show dots
-        this.LOD_SMALL_THRESHOLD = 0.4; // Below this, show small thumbnails
-        this.LOD_MEDIUM_THRESHOLD = 1.2; // Below this, show medium thumbnails
-        // Above medium = large thumbnails
+        // LOD thresholds - adjusted for proper zoom-dependent sizing
+        // These thresholds now work with the new sizing formula
+        this.LOD_DOT_THRESHOLD = 0.3; // Below this zoom, show dots (4-8px)
+        this.LOD_SMALL_THRESHOLD = 1.0; // Below this, show small thumbnails (16-32px)
+        this.LOD_MEDIUM_THRESHOLD = 3.0; // Below this, show medium thumbnails (64-128px)
+        // Above medium = large thumbnails (256px)
 
         this.init();
     }
@@ -212,7 +213,8 @@ class EmbeddingMap {
 
         const zoomX = canvasWidth / dataWidth;
         const zoomY = canvasHeight / dataHeight;
-        const zoom = Math.min(zoomX, zoomY) * 0.8;
+        // Start fully zoomed out (0.15 factor) to show all points as tiny dots
+        const zoom = Math.min(zoomX, zoomY) * 0.15;
 
         this.camera = { x: centerX, y: centerY, zoom };
         this.targetCamera = { ...this.camera };
@@ -436,28 +438,38 @@ class EmbeddingMap {
 
         const visiblePoints = this.getVisiblePoints();
 
-        // Determine LOD
+        // Determine LOD and calculate display size using zoom-dependent formula
         const zoom = this.camera.zoom;
-        let renderMode, pointSize;
+        let renderMode, displaySize;
 
+        // Use formula: displaySize = min(256, baseSize * zoom^1.5)
+        // This creates smooth scaling that grows with zoom level
+        const scaledSize = 4 * Math.pow(zoom, 1.5);
+        displaySize = Math.min(256, scaledSize);
+
+        // Determine render mode based on display size
         if (zoom < this.LOD_DOT_THRESHOLD) {
             renderMode = 'dot';
-            pointSize = 2;
+            // For dots, use small fixed size (2-4px)
+            displaySize = Math.max(2, Math.min(8, scaledSize));
         } else if (zoom < this.LOD_SMALL_THRESHOLD) {
             renderMode = 'small';
-            pointSize = 16;
+            // Small thumbnails: 16-32px range
+            displaySize = Math.min(32, Math.max(16, scaledSize));
         } else if (zoom < this.LOD_MEDIUM_THRESHOLD) {
             renderMode = 'medium';
-            pointSize = 32;
+            // Medium thumbnails: 64-128px range
+            displaySize = Math.min(128, Math.max(64, scaledSize));
         } else {
             renderMode = 'large';
-            pointSize = 64;
+            // Large thumbnails: up to 256px
+            displaySize = Math.min(256, Math.max(128, scaledSize));
         }
 
         // Render points
         for (const point of visiblePoints) {
             const screen = this.worldToScreen(point.x, point.y);
-            const size = pointSize * zoom;
+            const size = displaySize;
 
             if (renderMode === 'dot') {
                 // Draw as colored dot
@@ -477,10 +489,13 @@ class EmbeddingMap {
 
                     ctx.globalAlpha = 1.0;
 
-                    // Draw prompt text if large enough
-                    if (renderMode === 'large' && size > 48) {
+                    // Draw prompt text only when zoomed very close
+                    // Truncated text at 128-200px, full text above 200px
+                    if (size > 128) {
                         const maxWidth = size;
-                        const truncated = this.truncateText(point.prompt, 50);
+                        // Show fuller text when very zoomed in (>200px)
+                        const truncateLength = size > 200 ? 100 : 30;
+                        const truncated = this.truncateText(point.prompt, truncateLength);
 
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                         ctx.fillRect(screen.x - size / 2, screen.y + size / 2, size, 20);
