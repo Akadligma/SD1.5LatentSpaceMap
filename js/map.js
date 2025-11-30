@@ -467,8 +467,8 @@ class EmbeddingMap {
         const viewportWidth = viewport.width;
         const scaledDataWidth = this.bounds.maxX - this.bounds.minX;
 
-        let displaySize = 4 * (scaledDataWidth / viewportWidth);
-        displaySize = Math.max(4, Math.min(256, displaySize));
+        let displaySize = 2.5 * (scaledDataWidth / viewportWidth);
+        displaySize = Math.max(2, Math.min(256, displaySize));
 
         // Determine render mode based on display size
         let renderMode;
@@ -491,7 +491,7 @@ class EmbeddingMap {
                 // Draw as colored dot
                 ctx.fillStyle = this.filteredIds && !this.filteredIds.has(point.id) ? '#333' : '#6366f1';
                 ctx.beginPath();
-                ctx.arc(screen.x, screen.y, size, 0, Math.PI * 2);
+                ctx.arc(screen.x, screen.y, size / 2, 0, Math.PI * 2);
                 ctx.fill();
             } else {
                 // Draw thumbnail
