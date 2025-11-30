@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Embedding Map - SD 1.5 CLIP Space</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading embedding map...</div>
+            <div class="loading-progress">0%</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app" class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>SD 1.5 CLIP Embedding Space</h1>
+                <div class="stats">
+                    <span id="total-points">0</span> images
+                    <span class="separator">|</span>
+                    <span id="visible-points">0</span> visible
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="search-container">
+                    <input
+                        type="text"
+                        id="search-input"
+                        class="search-input"
+                        placeholder="Search prompts..."
+                        autocomplete="off"
+                    >
+                    <button id="search-clear" class="search-clear" style="display: none;">×</button>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Canvas Area -->
+        <div id="canvas-container" class="canvas-container">
+            <canvas id="main-canvas"></canvas>
+
+            <!-- Minimap -->
+            <div id="minimap-container" class="minimap-container">
+                <canvas id="minimap-canvas"></canvas>
+            </div>
+
+            <!-- Tooltip -->
+            <div id="tooltip" class="tooltip" style="display: none;">
+                <div class="tooltip-image-container">
+                    <img id="tooltip-image" class="tooltip-image" alt="">
+                </div>
+                <div class="tooltip-prompt"></div>
+            </div>
+
+            <!-- Controls Info -->
+            <div class="controls-info">
+                <div class="control-item">🖱️ Drag to pan</div>
+                <div class="control-item">🔍 Scroll to zoom</div>
+                <div class="control-item">🔍 Search to filter</div>
+            </div>
+
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+                <button id="zoom-in" class="zoom-btn" title="Zoom In">+</button>
+                <button id="zoom-out" class="zoom-btn" title="Zoom Out">−</button>
+                <button id="zoom-reset" class="zoom-btn" title="Reset View">⊙</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/map.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
